@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="ระบบสร้างหนังสือรุ่นออนไลน์ ชั้นประถมศึกษาปีที่ 6 โรงเรียนบ้านหนองโจงโลง">
+<meta name="theme-color" content="#4f46e5">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%96%3C/text%3E%3C/svg%3E">
+<title>ระบบสร้างหนังสือรุ่นออนไลน์ ชั้นประถมศึกษาปีที่ 6 - โรงเรียนบ้านหนองโจงโลง</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>tailwind.config={theme:{extend:{fontFamily:{sans:['Kanit','sans-serif']}}}}</script>
+<style>
+body{font-family:'Kanit',sans-serif;background:#f1f5f9}
+.yearbook-page{width:794px;height:1123px;position:relative;overflow:hidden;background:#fff;box-shadow:0 20px 25px -5px rgba(0,0,0,.15),0 8px 10px -6px rgba(0,0,0,.1);margin:0 auto;flex-shrink:0;user-select:none}
+.scrapbook-dots{background-image:radial-gradient(rgba(0,0,0,.08) 1.5px,transparent 1.5px);background-size:22px 22px}
+.polaroid{background:#fff;padding:10px 10px 30px;box-shadow:0 10px 15px -3px rgba(0,0,0,.15),0 4px 6px -2px rgba(0,0,0,.08);border:1px solid #f1f5f9;position:relative}
+.washi-tape{position:absolute;top:-12px;left:50%;transform:translateX(-50%) rotate(-3deg);width:95px;height:26px;background:rgba(255,255,255,.65);border-left:2px dashed rgba(0,0,0,.08);border-right:2px dashed rgba(0,0,0,.08);box-shadow:0 2px 4px rgba(0,0,0,.06);z-index:10}
+@media (max-width:900px){.preview-scale-wrapper{display:flex;justify-content:center;overflow-x:auto;padding:10px 0}.yearbook-page-scaled{transform:scale(.45);transform-origin:top center;margin-bottom:-600px}}
+@media (min-width:901px) and (max-width:1350px){.yearbook-page-scaled{transform:scale(.75);transform-origin:top center;margin-bottom:-270px}}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:#f1f5f9}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
+.pdf-page-break{page-break-after:always;break-after:page}
+.inp{width:100%;padding:.5rem .875rem;border-radius:.75rem;border:1px solid #cbd5e1;font-size:.875rem}
+.inp:focus{outline:none;box-shadow:0 0 0 2px #6366f1}
+</style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-800">
+<noscript><div style="padding:1rem;background:#fee2e2;color:#991b1b;text-align:center">กรุณาเปิดใช้งาน JavaScript เพื่อใช้งานระบบนี้</div></noscript>
+
+<!-- ===== AUTH SCREEN (Login / Register) ===== -->
+<div id="authScreen" class="fixed inset-0 z-[60] bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 flex items-center justify-center p-4 overflow-y-auto">
+  <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 space-y-4 my-auto">
+    <div class="text-center space-y-1">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-3xl"><i class="fa-solid fa-book-open-reader"></i></div>
+      <h1 class="text-lg font-bold">ระบบสร้างหนังสือรุ่นออนไลน์ ป.6</h1>
+      <p class="text-xs text-slate-500">โรงเรียนบ้านหนองโจงโลง สพป.สุรินทร์ เขต 3</p>
+    </div>
+    <div class="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl">
+      <button id="authTab-login" onclick="switchAuth('login')" class="py-2 rounded-lg text-sm font-semibold bg-white text-indigo-600 shadow-sm">เข้าสู่ระบบ</button>
+      <button id="authTab-register" onclick="switchAuth('register')" class="py-2 rounded-lg text-sm font-semibold text-slate-600">สมัครสมาชิก</button>
+    </div>
+    <p id="authMsg" class="hidden text-xs rounded-xl px-3 py-2"></p>
+
+    <form id="loginForm" onsubmit="doLogin(event)" class="space-y-3">
+      <div><label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อผู้ใช้</label><input id="loginUser" class="inp" required autocomplete="username" placeholder="เช่น kru.somchai"></div>
+      <div><label class="block text-xs font-semibold text-slate-600 mb-1">รหัสผ่าน</label><input id="loginPass" type="password" class="inp" required autocomplete="current-password"></div>
+      <label class="flex items-center gap-2 text-xs text-slate-600"><input type="checkbox" id="loginRemember" checked> จดจำการเข้าสู่ระบบในเครื่องนี้</label>
+      <button class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow flex items-center justify-center gap-2"><i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ</button>
+    </form>
+
+    <form id="registerForm" onsubmit="doRegister(event)" class="space-y-3 hidden">
+      <div><label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อที่แสดง</label><input id="regName" class="inp" required maxlength="40" placeholder="เช่น ครูสมชาย / ห้อง ป.6/1"></div>
+      <div><label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อผู้ใช้ (a-z, 0-9, . _ - อย่างน้อย 3 ตัว)</label><input id="regUser" class="inp" required autocomplete="username" pattern="[A-Za-z0-9._\-]{3,30}" placeholder="kru.somchai"></div>
+      <div class="grid grid-cols-2 gap-2">
+        <div><label class="block text-xs font-semibold text-slate-600 mb-1">รหัสผ่าน (6 ตัวขึ้นไป)</label><input id="regPass" type="password" minlength="6" class="inp" required autocomplete="new-password"></div>
+        <div><label class="block text-xs font-semibold text-slate-600 mb-1">ยืนยันรหัสผ่าน</label><input id="regPass2" type="password" minlength="6" class="inp" required autocomplete="new-password"></div>
+      </div>
+      <div id="inviteBox" class="hidden"><label class="block text-xs font-semibold text-slate-600 mb-1">รหัสเชิญสมัครสมาชิก (ขอจากผู้ดูแลระบบ)</label><input id="regInvite" class="inp" autocomplete="off"></div>
+      <button class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl shadow flex items-center justify-center gap-2"><i class="fa-solid fa-user-plus"></i> สมัครสมาชิก</button>
+    </form>
+    <p class="text-[11px] text-slate-400 text-center leading-relaxed"><i class="fa-solid fa-cloud"></i> บัญชีและข้อมูลหนังสือรุ่นถูกเก็บบนเซิร์ฟเวอร์ ล็อกอินได้จากทุกเครื่อง แต่ละบัญชีเห็นเฉพาะข้อมูลของตัวเอง</p>
+  </div>
+</div>
+
+<!-- ===== ACCOUNT MODAL ===== -->
+<div id="accountModal" class="fixed inset-0 z-[55] bg-slate-900/60 hidden items-center justify-center p-4">
+  <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 space-y-4">
+    <div class="flex items-center justify-between"><h3 class="font-bold flex items-center gap-2"><i class="fa-solid fa-user-gear text-indigo-600"></i> จัดการบัญชี: <span id="accUserLabel"></span></h3><button onclick="closeAccount()" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark"></i></button></div>
+    <p id="accMsg" class="hidden text-xs rounded-xl px-3 py-2"></p>
+    <form onsubmit="changePassword(event)" class="space-y-2">
+      <p class="text-xs font-bold text-slate-600">เปลี่ยนรหัสผ่าน</p>
+      <input id="accOld" type="password" class="inp" placeholder="รหัสผ่านเดิม" required>
+      <input id="accNew" type="password" class="inp" placeholder="รหัสผ่านใหม่ (6 ตัวขึ้นไป)" minlength="6" required>
+      <button class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl">บันทึกรหัสผ่านใหม่</button>
+    </form>
+    <form onsubmit="deleteAccount(event)" class="space-y-2 pt-3 border-t">
+      <p class="text-xs font-bold text-rose-600">ลบบัญชีและข้อมูลหนังสือรุ่นทั้งหมด</p>
+      <input id="accDelPass" type="password" class="inp" placeholder="ยืนยันด้วยรหัสผ่าน" required>
+      <button class="w-full py-2 bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold rounded-xl">ลบบัญชีถาวร</button>
+    </form>
+  </div>
+</div>
+
+<!-- ===== HEADER ===== -->
+<header class="bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-500 text-white shadow-lg sticky top-0 z-40">
+  <div class="max-w-[1600px] mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <div class="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center text-2xl"><i class="fa-solid fa-book-open-reader"></i></div>
+      <div>
+        <h1 class="text-lg md:text-xl font-bold leading-tight">ระบบสร้างหนังสือรุ่นออนไลน์ ชั้นประถมศึกษาปีที่ 6</h1>
+        <p class="text-xs text-sky-100" id="headerSchoolTitle"></p>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <button onclick="exportCurrentPagePNG()" class="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-sm font-medium rounded-xl shadow flex items-center gap-2 active:scale-95"><i class="fa-solid fa-image"></i> เซฟรูปหน้านี้ (PNG)</button>
+      <button onclick="exportFullPDF()" class="px-3.5 py-2 bg-rose-500 hover:bg-rose-600 text-sm font-medium rounded-xl shadow flex items-center gap-2 active:scale-95"><i class="fa-solid fa-file-pdf"></i> ส่งออก PDF ทั้งเล่ม</button>
+      <button onclick="exportStandaloneWeb()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-sm font-medium rounded-xl shadow flex items-center gap-2 active:scale-95"><i class="fa-solid fa-globe"></i> ส่งออกเป็นเว็บ (.html)</button>
+      <span id="syncBadge" class="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-white/20">☁️ บันทึกแล้ว</span>
+      <div class="flex items-center gap-1 bg-white/15 rounded-xl pl-3 pr-1 py-1">
+        <button onclick="openAccount()" class="text-sm font-medium flex items-center gap-2" title="จัดการบัญชี"><i class="fa-solid fa-circle-user text-lg"></i><span id="userChipName" class="max-w-[120px] truncate"></span></button>
+        <button onclick="logout()" class="ml-1 px-2.5 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-semibold" title="ออกจากระบบ"><i class="fa-solid fa-right-from-bracket"></i> ออก</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="flex-1 max-w-[1600px] w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
+  <section class="lg:col-span-5 flex flex-col gap-4">
+    <div class="bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200 grid grid-cols-3 gap-1">
+      <button onclick="switchLeftTab('cover')" id="tabBtn-cover" class="py-2.5 px-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"><i class="fa-solid fa-wand-magic-sparkles"></i> 1. หน้าปก</button>
+      <button onclick="switchLeftTab('form')" id="tabBtn-form" class="py-2.5 px-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"><i class="fa-solid fa-user-plus"></i> 2. เพิ่มนักเรียน</button>
+      <button onclick="switchLeftTab('list')" id="tabBtn-list" class="py-2.5 px-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"><i class="fa-solid fa-users"></i> 3. รายชื่อ (<span id="studentCountBadge">0</span>)</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div id="tabContent-cover" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h2 class="text-base font-bold flex items-center gap-2"><i class="fa-solid fa-palette text-indigo-600"></i> ตั้งค่าหน้าปกอัตโนมัติ</h2>
+        <span class="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full font-medium">อัปเดตแบบเรียลไทม์</span>
+      </div>
+      <div class="space-y-3">
+        <div><label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อโรงเรียน / หน่วยงาน</label><input id="coverSchool" oninput="updateCoverData()" class="inp"></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อหนังสือรุ่น / ชื่อรุ่น</label><input id="coverTitle" oninput="updateCoverData()" class="inp"></div>
+          <div><label class="block text-xs font-semibold text-slate-600 mb-1">ปีการศึกษา</label><input id="coverYear" oninput="updateCoverData()" class="inp"></div>
+        </div>
+        <div><label class="block text-xs font-semibold text-slate-600 mb-1">ข้อความคำขวัญ / คำโปรยหน้าปก</label><input id="coverSubtitle" oninput="updateCoverData()" class="inp"></div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">ธีมสีหนังสือรุ่น</label>
+          <div id="themeButtons" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">รูปภาพรวมของห้อง (หน้าปก)</label>
+          <label class="flex flex-col items-center justify-center border-2 border-dashed border-indigo-300 bg-indigo-50/40 hover:bg-indigo-50 rounded-2xl p-4 cursor-pointer">
+            <i class="fa-solid fa-cloud-arrow-up text-2xl text-indigo-500 mb-1"></i>
+            <span class="text-xs font-medium text-slate-700">คลิกเพื่อเลือกรูปภาพหมู่ของห้อง</span>
+            <span class="text-[11px] text-slate-400">ระบบย่อขนาดรูปอัตโนมัติ (แนะนำภาพแนวนอน)</span>
+            <input type="file" accept="image/*" onchange="handleCoverImageUpload(event)" class="hidden">
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div id="tabContent-form" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4 hidden">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h2 class="text-base font-bold flex items-center gap-2" id="formHeaderTitle"></h2>
+        <button type="button" onclick="resetStudentForm()" class="text-xs text-slate-500 hover:text-rose-600 font-medium"><i class="fa-solid fa-rotate-left"></i> ล้างฟอร์ม</button>
+      </div>
+      <form id="studentForm" onsubmit="saveStudent(event)" class="space-y-3.5">
+        <input type="hidden" id="editStudentId">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-600 mb-1">1. ชื่อ-นามสกุล <span class="text-rose-500">*</span></label><input id="stFullName" required class="inp" placeholder="เช่น ด.ช.รักเรียน เพียรศึกษา"></div>
+          <div><label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อเล่น <span class="text-rose-500">*</span></label><input id="stNickname" required class="inp" placeholder="เช่น น้องภูมิ"></div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div><label class="block text-xs font-semibold text-slate-600 mb-1">2. วัน/เดือน/ปีเกิด (ค.ศ.) <span class="text-rose-500">*</span></label><input type="date" id="stBirthdate" required class="inp"></div>
+          <div><label class="block text-xs font-semibold text-slate-600 mb-1">4. อาชีพที่ใฝ่ฝัน <span class="text-rose-500">*</span></label><input id="stDreamJob" required class="inp" placeholder="เช่น โปรแกรมเมอร์, คุณครู, หมอ"></div>
+        </div>
+        <div><label class="block text-xs font-semibold text-slate-600 mb-1">คติประจำใจ / ความในใจถึงเพื่อนๆ</label><input id="stQuote" class="inp" placeholder="เช่น ขอบคุณที่เป็นเพื่อนกันนะ โชคดีในชั้น ม.1!"></div>
+        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2.5">
+          <label class="block text-xs font-bold text-slate-700">3. ช่องทางติดต่อ (กรอกเฉพาะที่มี)</label>
+          <div id="socialInputs" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+        </div>
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-slate-700">อัปโหลดรูปภาพประจำตัว (3 - 5 รูป) <span class="text-rose-500">*</span></label>
+            <span id="photoCounterText" class="text-xs font-semibold text-indigo-600"></span>
+          </div>
+          <label class="flex flex-col items-center justify-center border-2 border-dashed border-indigo-300 bg-indigo-50/40 hover:bg-indigo-50 rounded-2xl p-3.5 cursor-pointer">
+            <i class="fa-solid fa-images text-xl text-indigo-500 mb-1"></i>
+            <span class="text-xs font-medium text-slate-700">คลิกเพื่อเลือกรูปภาพ (เลือกพร้อมกันได้ 3-5 รูป)</span>
+            <input type="file" accept="image/*" multiple onchange="handleStudentPhotosUpload(event)" class="hidden">
+          </label>
+          <div id="formPhotoPreviewGrid" class="grid grid-cols-5 gap-2 pt-1"></div>
+        </div>
+        <button type="submit" id="saveStudentBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md flex items-center justify-center gap-2"></button>
+      </form>
+    </div>
+
+    <!-- TAB 3 -->
+    <div id="tabContent-list" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4 hidden">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h2 class="text-base font-bold flex items-center gap-2"><i class="fa-solid fa-list-check text-indigo-600"></i> รายชื่อนักเรียนในเล่ม</h2>
+        <button onclick="openAddStudentTab()" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-medium flex items-center gap-1"><i class="fa-solid fa-plus"></i> เพิ่มคนใหม่</button>
+      </div>
+      <div id="studentListContainer" class="space-y-2 max-h-[380px] overflow-y-auto pr-1"></div>
+      <div class="pt-3 border-t border-slate-200 space-y-2">
+        <p class="text-xs font-semibold text-slate-500">จัดการฐานข้อมูลโปรเจกต์ (สำรองข้อมูลเก็บไว้แก้ไขต่อ)</p>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="backupJSON()" class="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"><i class="fa-solid fa-download text-indigo-600"></i> สำรองข้อมูล (.json)</button>
+          <label class="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"><i class="fa-solid fa-upload text-emerald-600"></i> กู้คืนข้อมูล (.json)<input type="file" accept=".json" onchange="restoreJSON(event)" class="hidden"></label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="lg:col-span-7 flex flex-col gap-4">
+    <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+        <button onclick="setViewMode('flip')" id="viewModeBtn-flip" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5"><i class="fa-solid fa-book-open"></i> โหมดเปิดทีละหน้า</button>
+        <button onclick="setViewMode('scroll')" id="viewModeBtn-scroll" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5"><i class="fa-solid fa-layer-group"></i> โหมดเรียงทั้งหมด</button>
+      </div>
+      <div id="flipNavigationControls" class="flex items-center gap-2">
+        <button onclick="prevPage()" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-indigo-100 flex items-center justify-center"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+        <select id="pageJumpSelect" onchange="jumpToPage(this.value)" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold bg-white focus:outline-none"></select>
+        <button onclick="nextPage()" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-indigo-100 flex items-center justify-center"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+      </div>
+    </div>
+    <div class="preview-scale-wrapper"><div id="yearbookCanvasContainer" class="yearbook-page-scaled flex flex-col items-center gap-8"></div></div>
+  </section>
+</main>
+
+<footer class="bg-white border-t border-slate-200 py-4 mt-8 text-center text-xs text-slate-500 font-medium">
+  พัฒนาโดย ครูจำนงค์ ขันตี สงวนลิขสิทธิ์ พ.ศ.2568 | โรงเรียนบ้านหนองโจงโลง สพป.สุรินทร์ เขต 3
+</footer>
+
+<div id="loadingOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex-col items-center justify-center text-white">
+  <div class="bg-white text-slate-800 p-6 rounded-3xl shadow-2xl max-w-sm w-full mx-4 text-center space-y-3">
+    <div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+    <h3 class="text-base font-bold" id="loadingTitle"></h3>
+    <p class="text-xs text-slate-500" id="loadingSubtitle"></p>
+  </div>
+</div>
+<div id="pdfExportStaging" class="fixed -left-[9999px] top-0"></div>
+
+<script>
+/* =========================================================
+   MEMBERSHIP SYSTEM (local accounts, per-user data)
+   ========================================================= */
+const SESSION_KEY = 'bnjl_cloud_session_v1';
+let currentUser = null, token = null, displayName = '';
+let pending = 0, syncErr = false, metaTimer = null;
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const getSess = () => { try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY)); } catch (e) { return null; } };
+function saveSess() {
+  const st = localStorage.getItem(SESSION_KEY) ? localStorage : sessionStorage;
+  st.setItem(SESSION_KEY, JSON.stringify({ token, username: currentUser, name: displayName }));
+}
+
+async function api(method, path, body) {
+  let r;
+  try {
+    r = await fetch('/api' + path, { method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  } catch (e) { throw Object.assign(new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ต'), { status: 0 }); }
+  let data = null; try { data = await r.json(); } catch (e) {}
+  if (!r.ok) throw Object.assign(new Error((data && data.error) || 'เกิดข้อผิดพลาด (' + r.status + ')'), { status: r.status });
+  return data;
+}
+
+function setSync() {
+  const el = document.getElementById('syncBadge'); if (!el) return;
+  const busy = pending > 0 || metaTimer;
+  el.textContent = busy ? '☁️ กำลังบันทึก...' : syncErr ? '⚠️ บันทึกไม่สำเร็จ' : '☁️ บันทึกแล้ว';
+  el.className = 'text-xs font-semibold px-2.5 py-1.5 rounded-lg ' + (!busy && syncErr ? 'bg-rose-500' : 'bg-white/20');
+}
+function cloud(fn) {
+  pending++; setSync();
+  return fn().then(() => { syncErr = false; }, e => {
+    if (e.status === 401 && token) forceLogout('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+    else { syncErr = true; console.error(e); }
+  }).finally(() => { pending--; setSync(); });
+}
+window.addEventListener('beforeunload', e => { if (pending > 0 || metaTimer) { e.preventDefault(); e.returnValue = ''; } });
+
+function showMsg(id, text, ok) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = 'text-xs rounded-xl px-3 py-2 ' + (ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700');
+}
+const hideMsg = id => document.getElementById(id).classList.add('hidden');
+
+function switchAuth(mode) {
+  const on = 'py-2 rounded-lg text-sm font-semibold bg-white text-indigo-600 shadow-sm';
+  const off = 'py-2 rounded-lg text-sm font-semibold text-slate-600';
+  document.getElementById('authTab-login').className = mode === 'login' ? on : off;
+  document.getElementById('authTab-register').className = mode === 'register' ? on : off;
+  document.getElementById('loginForm').classList.toggle('hidden', mode !== 'login');
+  document.getElementById('registerForm').classList.toggle('hidden', mode !== 'register');
+  hideMsg('authMsg');
+}
+
+async function doRegister(e) {
+  e.preventDefault();
+  const v = id => document.getElementById(id).value;
+  if (v('regPass') !== v('regPass2')) return showMsg('authMsg', 'รหัสผ่านและการยืนยันไม่ตรงกัน', false);
+  const btn = e.submitter; if (btn) btn.disabled = true;
+  try {
+    const r = await api('POST', '/register', { name: v('regName').trim(), username: v('regUser').trim(), password: v('regPass'), invite: v('regInvite') });
+    e.target.reset(); startSession(r, true);
+  } catch (err) { showMsg('authMsg', err.message, false); }
+  finally { if (btn) btn.disabled = false; }
+}
+
+async function doLogin(e) {
+  e.preventDefault();
+  const remember = document.getElementById('loginRemember').checked;
+  const btn = e.submitter; if (btn) btn.disabled = true;
+  try {
+    const r = await api('POST', '/login', { username: document.getElementById('loginUser').value.trim(), password: document.getElementById('loginPass').value });
+    e.target.reset(); startSession(r, remember);
+  } catch (err) { showMsg('authMsg', err.message, false); }
+  finally { if (btn) btn.disabled = false; }
+}
+
+function startSession(r, remember) {
+  token = r.token; currentUser = r.username; displayName = r.name;
+  localStorage.removeItem(SESSION_KEY); sessionStorage.removeItem(SESSION_KEY);
+  (remember ? localStorage : sessionStorage).setItem(SESSION_KEY, JSON.stringify({ token, username: currentUser, name: displayName }));
+  enterApp();
+}
+
+async function enterApp() {
+  document.getElementById('userChipName').textContent = displayName;
+  document.getElementById('authScreen').classList.add('hidden');
+  hideMsg('authMsg');
+  showLoading('กำลังโหลดข้อมูลหนังสือรุ่น...', 'ดึงข้อมูลบัญชีของคุณจากเซิร์ฟเวอร์');
+  try { await loadCloudData(); }
+  catch (e) { return forceLogout(e.status === 401 ? 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่' : 'โหลดข้อมูลไม่สำเร็จ: ' + e.message); }
+  hideLoading();
+  currentPageIndex = 0; resetStudentForm(); populateCoverInputs(); renderStudentList(); renderYearbook(); switchLeftTab('cover'); setSync();
+}
+
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY); sessionStorage.removeItem(SESSION_KEY);
+  clearTimeout(metaTimer); metaTimer = null;
+  token = currentUser = null; appData = defaultData(); tempStudentPhotos = [];
+  document.getElementById('authScreen').classList.remove('hidden');
+  switchAuth('login'); setSync();
+}
+async function logout() { if (metaTimer) await saveMeta(true); clearSession(); }
+function forceLogout(msg) { hideLoading(); clearSession(); showMsg('authMsg', msg, false); }
+
+function openAccount() {
+  document.getElementById('accUserLabel').textContent = currentUser;
+  hideMsg('accMsg');
+  const m = document.getElementById('accountModal'); m.classList.remove('hidden'); m.classList.add('flex');
+}
+function closeAccount() {
+  const m = document.getElementById('accountModal'); m.classList.add('hidden'); m.classList.remove('flex');
+  ['accOld', 'accNew', 'accDelPass'].forEach(i => document.getElementById(i).value = '');
+}
+
+async function changePassword(e) {
+  e.preventDefault();
+  const btn = e.submitter; if (btn) btn.disabled = true;
+  try {
+    const r = await api('POST', '/password', { oldPassword: document.getElementById('accOld').value, newPassword: document.getElementById('accNew').value });
+    token = r.token; saveSess();
+    ['accOld', 'accNew'].forEach(i => document.getElementById(i).value = '');
+    showMsg('accMsg', 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว (อุปกรณ์อื่นต้องล็อกอินใหม่)', true);
+  } catch (err) { showMsg('accMsg', err.message, false); }
+  finally { if (btn) btn.disabled = false; }
+}
+
+async function deleteAccount(e) {
+  e.preventDefault();
+  if (!confirm('ลบบัญชีและข้อมูลหนังสือรุ่นทั้งหมดถาวร ไม่สามารถกู้คืนได้ ต้องการดำเนินการต่อหรือไม่?\n(แนะนำให้สำรองข้อมูล .json ก่อน)')) return;
+  try {
+    await api('DELETE', '/account', { password: document.getElementById('accDelPass').value });
+    closeAccount(); clearSession(); showMsg('authMsg', 'ลบบัญชีเรียบร้อยแล้ว', true);
+  } catch (err) { showMsg('accMsg', err.message, false); }
+}
+
+/* =========================================================
+   YEARBOOK APP
+   ========================================================= */
+const THEMES = {
+  sky:   { name: 'Pastel Sky',   from: 'sky-400', to: 'indigo-400', bgGrad: 'from-sky-100 via-indigo-50 to-blue-100', border: 'border-sky-300', accentText: 'text-sky-700', badgeBg: 'bg-sky-100 text-sky-800 border-sky-300', headerGrad: 'from-sky-500 to-indigo-600', btn: 'bg-sky-50 text-sky-800' },
+  sunny: { name: 'Sunny Yellow', from: 'amber-400', to: 'orange-400', bgGrad: 'from-amber-100 via-yellow-50 to-orange-100', border: 'border-amber-300', accentText: 'text-amber-800', badgeBg: 'bg-amber-100 text-amber-900 border-amber-300', headerGrad: 'from-amber-500 to-orange-500', btn: 'bg-amber-50 text-amber-900' },
+  pink:  { name: 'Sweet Pink',   from: 'pink-400', to: 'rose-400', bgGrad: 'from-pink-100 via-rose-50 to-fuchsia-100', border: 'border-pink-300', accentText: 'text-pink-700', badgeBg: 'bg-pink-100 text-pink-800 border-pink-300', headerGrad: 'from-pink-500 to-rose-500', btn: 'bg-pink-50 text-pink-900' },
+  mint:  { name: 'Mint Fresh',   from: 'emerald-400', to: 'teal-400', bgGrad: 'from-emerald-100 via-teal-50 to-cyan-100', border: 'border-emerald-300', accentText: 'text-emerald-800', badgeBg: 'bg-emerald-100 text-emerald-900 border-emerald-300', headerGrad: 'from-emerald-500 to-teal-600', btn: 'bg-emerald-50 text-emerald-900' }
+};
+
+const SOCIALS = [
+  { key: 'facebook',  icon: 'fa-facebook',  color: 'text-blue-600',    id: 'stFacebook',  ph: 'ชื่อ Facebook' },
+  { key: 'instagram', icon: 'fa-instagram', color: 'text-pink-600',    id: 'stInstagram', ph: 'ไอดี Instagram' },
+  { key: 'tiktok',    icon: 'fa-tiktok',    color: 'text-slate-900',   id: 'stTiktok',    ph: 'ไอดี TikTok (@...)' },
+  { key: 'line',      icon: 'fa-line',      color: 'text-emerald-500', id: 'stLine',      ph: 'LINE ID' },
+  { key: 'discord',   icon: 'fa-discord',   color: 'text-indigo-600',  id: 'stDiscord',   ph: 'ชื่อผู้ใช้ Discord (เช่น user#1234)' }
+];
+
+function demoSVG(text, bg) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450" viewBox="0 0 600 450"><rect width="100%" height="100%" fill="${bg}"/><circle cx="300" cy="180" r="70" fill="rgba(255,255,255,0.25)"/><path d="M180 380 Q300 260 420 380" fill="rgba(255,255,255,0.25)"/><text x="50%" y="88%" dominant-baseline="middle" text-anchor="middle" font-family="Kanit, sans-serif" font-size="28" font-weight="bold" fill="#ffffff">${text}</text></svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+function defaultData() {
+  return {
+    cover: {
+      school: 'โรงเรียนบ้านหนองโจงโลง สพป.สุรินทร์ เขต 3',
+      title: 'เพื่อนกันตลอดไป ชั้นประถมศึกษาปีที่ 6',
+      year: '2569',
+      subtitle: 'บันทึกความทรงจำแสนพิเศษและมิตรภาพของพวกเราชาว ป.6',
+      theme: 'sky',
+      coverImage: demoSVG('ภาพหมู่ชั้นประถมศึกษาปีที่ 6', '#38bdf8')
+    },
+    students: [{
+      id: 'st_demo_1', fullName: 'ด.ช.ปรมินทร์ รักเรียน', nickname: 'ต้นกล้า', birthdate: '2014-05-14',
+      dreamJob: 'โปรแกรมเมอร์ & นักพัฒนาเกม',
+      quote: 'ขอบคุณเพื่อนๆ ทุกคนที่ช่วยติวหนังสือและเล่นฟุตบอลด้วยกันทุกพักเที่ยงนะ!',
+      socials: { facebook: 'Tonkla Poramin', instagram: 'tonkla.dev', tiktok: '@tonkla_p6', line: 'tonkla2014', discord: 'tonkla#9999' },
+      photos: [demoSVG('น้องต้นกล้า #1', '#6366f1'), demoSVG('กิจกรรมวันวิทย์ #2', '#0ea5e9'), demoSVG('ทัศนศึกษา #3', '#10b981'), demoSVG('แข่งขันทักษะ #4', '#f59e0b')]
+    }]
+  };
+}
+
+let appData = defaultData();
+let currentPageIndex = 0;
+let currentViewMode = 'flip';
+let tempStudentPhotos = [];
+
+window.addEventListener('DOMContentLoaded', () => {
+  buildStaticUI();
+  setViewMode('flip');
+  const sess = getSess();
+  if (sess && sess.token) { token = sess.token; currentUser = sess.username; displayName = sess.name; enterApp(); }
+  api('GET', '/config').then(c => document.getElementById('inviteBox').classList.toggle('hidden', !c.inviteRequired)).catch(() => {});
+});
+
+function buildStaticUI() {
+  document.getElementById('themeButtons').innerHTML = Object.entries(THEMES).map(([k, t]) => `
+    <button type="button" onclick="setTheme('${k}')" id="themeBtn-${k}" class="p-2 rounded-xl border-2 border-transparent ${t.btn} text-xs font-semibold flex flex-col items-center gap-1">
+      <span class="w-6 h-6 rounded-full bg-gradient-to-tr from-${t.from} to-${t.to} block"></span>${t.name}
+    </button>`).join('');
+  document.getElementById('socialInputs').innerHTML = SOCIALS.map((s, i) => `
+    <div class="flex items-center bg-white border border-slate-300 rounded-xl px-3 py-1.5 ${i === 4 ? 'sm:col-span-2' : ''}">
+      <i class="fa-brands ${s.icon} ${s.color} text-base w-6"></i>
+      <input id="${s.id}" class="w-full text-xs focus:outline-none" placeholder="${s.ph}">
+    </div>`).join('');
+}
+
+/* ---------- Cloud storage ---------- */
+async function loadCloudData() {
+  const meta = await api('GET', '/meta');
+  if (!meta.cover) { appData = defaultData(); await pushAll(); return; }   // บัญชีใหม่: เริ่มจากข้อมูลตัวอย่าง
+  const list = await Promise.all((meta.order || []).map(id => api('GET', '/student/' + id).catch(() => null)));
+  appData = { cover: meta.cover, students: list.filter(Boolean) };
+}
+function saveMeta(now) {
+  clearTimeout(metaTimer); metaTimer = null;
+  const run = () => { metaTimer = null; return cloud(() => api('PUT', '/meta', { cover: appData.cover, order: appData.students.map(s => s.id) })); };
+  if (now) return run();
+  metaTimer = setTimeout(run, 800); setSync();
+}
+function saveToStorage() { saveMeta(); }                                  // หน้าปก/ธีม/ลำดับ (หน่วง 0.8 วินาที)
+const saveStudentRemote = st => cloud(() => api('PUT', '/student/' + st.id, st));
+const deleteStudentRemote = id => cloud(() => api('DELETE', '/student/' + id));
+async function pushAll() { await saveMeta(true); for (const s of appData.students) await saveStudentRemote(s); }
+
+async function restoreToCloud() {
+  appData.students.forEach((s, i) => { if (!/^[A-Za-z0-9_-]{1,60}$/.test(s.id || '')) s.id = 'st_' + Date.now() + '_' + i; s.photos = s.photos || []; });
+  showLoading('กำลังอัปโหลดข้อมูลขึ้นคลาวด์...', 'โปรดอย่ารีเฟรชหน้านี้จนกว่าจะเสร็จ');
+  try {
+    const keep = new Set(appData.students.map(s => s.id));
+    for (const id of (await api('GET', '/meta')).order || []) if (!keep.has(id)) await api('DELETE', '/student/' + id);
+    await pushAll();
+  } catch (e) { syncErr = true; setSync(); alert('อัปโหลดไม่สำเร็จ: ' + e.message); }
+  finally { hideLoading(); }
+}
+
+/* ---------- Left panel ---------- */
+function switchLeftTab(tab) {
+  ['cover', 'form', 'list'].forEach(t => {
+    const on = t === tab;
+    document.getElementById(`tabBtn-${t}`).className = 'py-2.5 px-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 ' + (on ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 hover:bg-slate-100');
+    document.getElementById(`tabContent-${t}`).classList.toggle('hidden', !on);
+  });
+}
+function openAddStudentTab() { resetStudentForm(); switchLeftTab('form'); }
+
+function populateCoverInputs() {
+  const c = appData.cover;
+  document.getElementById('coverSchool').value = c.school;
+  document.getElementById('coverTitle').value = c.title;
+  document.getElementById('coverYear').value = c.year;
+  document.getElementById('coverSubtitle').value = c.subtitle;
+  document.getElementById('headerSchoolTitle').textContent = c.school;
+  highlightThemeBtn(c.theme);
+}
+
+function updateCoverData() {
+  const v = id => document.getElementById(id).value.trim();
+  appData.cover.school = v('coverSchool') || 'โรงเรียนบ้านหนองโจงโลง สพป.สุรินทร์ เขต 3';
+  appData.cover.title = v('coverTitle') || 'หนังสือรุ่นชั้นประถมศึกษาปีที่ 6';
+  appData.cover.year = v('coverYear') || '2569';
+  appData.cover.subtitle = v('coverSubtitle');
+  document.getElementById('headerSchoolTitle').textContent = appData.cover.school;
+  saveToStorage(); renderYearbook();
+}
+
+function setTheme(k) { appData.cover.theme = k; highlightThemeBtn(k); saveToStorage(); renderYearbook(); }
+function highlightThemeBtn(k) {
+  Object.keys(THEMES).forEach(x => {
+    const b = document.getElementById(`themeBtn-${x}`);
+    b.classList.toggle('border-indigo-600', x === k); b.classList.toggle('ring-2', x === k); b.classList.toggle('ring-indigo-200', x === k);
+    b.classList.toggle('border-transparent', x !== k);
+  });
+}
+
+function compressImageFile(file, maxWidth = 900, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+        const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(cv.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject; img.src = e.target.result;
+    };
+    reader.onerror = reject; reader.readAsDataURL(file);
+  });
+}
+
+async function handleCoverImageUpload(event) {
+  const file = event.target.files[0]; if (!file) return;
+  try {
+    appData.cover.coverImage = await compressImageFile(file, 1100, 0.85);
+    currentPageIndex = 0; saveToStorage(); renderYearbook();
+  } catch (err) { alert('เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ'); }
+}
+
+async function handleStudentPhotosUpload(event) {
+  for (const file of Array.from(event.target.files)) {
+    if (tempStudentPhotos.length >= 5) break;
+    tempStudentPhotos.push(await compressImageFile(file, 750, 0.8));
+  }
+  renderFormPhotoPreviews(); event.target.value = '';
+}
+function removeTempPhoto(i) { tempStudentPhotos.splice(i, 1); renderFormPhotoPreviews(); }
+
+function renderFormPhotoPreviews() {
+  const n = tempStudentPhotos.length;
+  const counter = document.getElementById('photoCounterText');
+  counter.textContent = `เลือกแล้ว ${n}/5 รูป (ต้องใช้ 3-5 รูป)`;
+  counter.className = 'text-xs font-semibold ' + (n >= 3 ? 'text-emerald-600' : 'text-rose-600');
+  document.getElementById('formPhotoPreviewGrid').innerHTML = tempStudentPhotos.map((src, i) => `
+    <div class="relative aspect-square rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
+      <img src="${src}" class="w-full h-full object-cover">
+      <button type="button" onclick="removeTempPhoto(${i})" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-rose-600 text-white text-xs flex items-center justify-center shadow"><i class="fa-solid fa-xmark"></i></button>
+      <span class="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 rounded">#${i + 1}</span>
+    </div>`).join('');
+}
+
+function saveStudent(event) {
+  event.preventDefault();
+  if (tempStudentPhotos.length < 3 || tempStudentPhotos.length > 5) return alert('กรุณาอัปโหลดรูปภาพประจำตัวนักเรียนอย่างน้อย 3 รูป (สูงสุดไม่เกิน 5 รูป)');
+  const v = id => document.getElementById(id).value.trim();
+  const editId = document.getElementById('editStudentId').value;
+  const socials = {}; SOCIALS.forEach(s => socials[s.key] = v(s.id));
+  const st = {
+    id: editId || 'st_' + Date.now(), fullName: v('stFullName'), nickname: v('stNickname'),
+    birthdate: document.getElementById('stBirthdate').value, dreamJob: v('stDreamJob'),
+    quote: v('stQuote') || 'โชคดีเพื่อนๆ ทุกคน แล้วพบกันใหม่นะ!', socials, photos: [...tempStudentPhotos]
+  };
+  const idx = editId ? appData.students.findIndex(s => s.id === editId) : -1;
+  if (idx > -1) { appData.students[idx] = st; currentPageIndex = idx + 1; }
+  else { appData.students.push(st); currentPageIndex = appData.students.length; }
+  saveStudentRemote(st); saveToStorage(); resetStudentForm(); renderStudentList(); renderYearbook(); switchLeftTab('list');
+}
+
+function resetStudentForm() {
+  document.getElementById('studentForm').reset();
+  document.getElementById('editStudentId').value = '';
+  document.getElementById('formHeaderTitle').innerHTML = '<i class="fa-solid fa-user-graduate text-indigo-600"></i> เพิ่มข้อมูลนักเรียนรายบุคคล';
+  document.getElementById('saveStudentBtn').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูลนักเรียนลงหนังสือรุ่น';
+  tempStudentPhotos = []; renderFormPhotoPreviews();
+}
+
+function editStudent(id) {
+  const st = appData.students.find(s => s.id === id); if (!st) return;
+  const set = (i, val) => document.getElementById(i).value = val || '';
+  set('editStudentId', st.id); set('stFullName', st.fullName); set('stNickname', st.nickname);
+  set('stBirthdate', st.birthdate); set('stDreamJob', st.dreamJob); set('stQuote', st.quote);
+  SOCIALS.forEach(s => set(s.id, st.socials?.[s.key]));
+  tempStudentPhotos = [...(st.photos || [])]; renderFormPhotoPreviews();
+  document.getElementById('formHeaderTitle').innerHTML = `<i class="fa-solid fa-pen-to-square text-amber-500"></i> แก้ไขข้อมูล: ${esc(st.fullName)}`;
+  document.getElementById('saveStudentBtn').innerHTML = '<i class="fa-solid fa-check"></i> อัปเดตข้อมูลนักเรียน';
+  switchLeftTab('form');
+}
+
+function deleteStudent(id) {
+  const st = appData.students.find(s => s.id === id); if (!st) return;
+  if (!confirm(`ต้องการลบข้อมูลของ "${st.fullName}" ออกจากหนังสือรุ่นใช่หรือไม่?`)) return;
+  appData.students = appData.students.filter(s => s.id !== id); deleteStudentRemote(id);
+  if (currentPageIndex > appData.students.length) currentPageIndex = Math.max(0, appData.students.length);
+  saveToStorage(); renderStudentList(); renderYearbook();
+}
+
+function moveStudent(idx, dir) {
+  const t = idx + dir; if (t < 0 || t >= appData.students.length) return;
+  [appData.students[idx], appData.students[t]] = [appData.students[t], appData.students[idx]];
+  saveToStorage(); renderStudentList(); renderYearbook();
+}
+
+function renderStudentList() {
+  document.getElementById('studentCountBadge').textContent = appData.students.length;
+  const box = document.getElementById('studentListContainer');
+  if (!appData.students.length) {
+    box.innerHTML = '<div class="text-center py-8 text-slate-400"><i class="fa-solid fa-folder-open text-3xl mb-2"></i><p class="text-xs">ยังไม่มีรายชื่อนักเรียน กดปุ่ม "เพิ่มคนใหม่" เพื่อเริ่มต้น</p></div>';
+    return;
+  }
+  box.innerHTML = appData.students.map((st, idx) => `
+    <div class="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 hover:border-indigo-300 bg-slate-50/70">
+      <div class="flex items-center gap-3 cursor-pointer flex-1" onclick="jumpToPage(${idx + 1})">
+        <img src="${st.photos[0]}" class="w-11 h-11 rounded-xl object-cover border border-white shadow-sm">
+        <div>
+          <p class="text-xs font-bold text-slate-800">${idx + 1}. ${esc(st.fullName)} (${esc(st.nickname)})</p>
+          <p class="text-[11px] text-indigo-600 font-medium"><i class="fa-solid fa-star text-[10px]"></i> ${esc(st.dreamJob)}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1">
+        <button onclick="moveStudent(${idx}, -1)" title="เลื่อนขึ้น" class="w-7 h-7 rounded-lg hover:bg-slate-200 text-slate-500 text-xs"><i class="fa-solid fa-arrow-up"></i></button>
+        <button onclick="moveStudent(${idx}, 1)" title="เลื่อนลง" class="w-7 h-7 rounded-lg hover:bg-slate-200 text-slate-500 text-xs"><i class="fa-solid fa-arrow-down"></i></button>
+        <button onclick="editStudent('${st.id}')" title="แก้ไข" class="w-7 h-7 rounded-lg hover:bg-amber-100 text-amber-600 text-xs"><i class="fa-solid fa-pen"></i></button>
+        <button onclick="deleteStudent('${st.id}')" title="ลบ" class="w-7 h-7 rounded-lg hover:bg-rose-100 text-rose-600 text-xs"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+function formatThaiDate(d) {
+  if (!d) return '-';
+  const p = d.split('-'); if (p.length !== 3) return d;
+  const m = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  return `${parseInt(p[2], 10)} ${m[parseInt(p[1], 10) - 1] || ''} พ.ศ. ${parseInt(p[0], 10) + 543}`;
+}
+
+/* ---------- Page templates ---------- */
+function buildCoverPageHTML(cover, total) {
+  const t = THEMES[cover.theme] || THEMES.sky;
+  return `
+  <div class="yearbook-page bg-gradient-to-br ${t.bgGrad} scrapbook-dots p-10 flex flex-col justify-between border-[12px] border-white">
+    <div class="flex items-center justify-between">
+      <div class="px-4 py-1.5 rounded-full bg-white/90 shadow-sm border ${t.border} text-xs font-bold ${t.accentText} flex items-center gap-2"><i class="fa-solid fa-graduation-cap"></i> YEARBOOK CLASS OF ${esc(cover.year)}</div>
+      <div class="px-4 py-1.5 rounded-full bg-white/90 shadow-sm border ${t.border} text-xs font-bold text-slate-600">ชั้นประถมศึกษาปีที่ 6 (${total} คน)</div>
+    </div>
+    <div class="text-center space-y-3 my-4">
+      <div class="inline-block px-6 py-1.5 rounded-full bg-white/80 border ${t.border} text-sm font-bold text-slate-700 shadow-sm">${esc(cover.school)}</div>
+      <h1 class="text-5xl font-extrabold text-slate-800 tracking-tight drop-shadow-sm leading-tight">${esc(cover.title)}</h1>
+      <p class="text-base font-medium text-slate-600 max-w-xl mx-auto">“${esc(cover.subtitle)}”</p>
+    </div>
+    <div class="relative mx-auto w-[640px] my-2">
+      <div class="polaroid rotate-[-1deg]">
+        <div class="washi-tape"></div>
+        <div class="w-full h-[460px] overflow-hidden rounded bg-slate-100"><img src="${cover.coverImage}" class="w-full h-full object-cover" alt="Cover"></div>
+        <div class="pt-4 text-center"><p class="text-lg font-bold text-slate-700">พวกเราชาวประถมศึกษาปีที่ 6 ปีการศึกษา ${esc(cover.year)}</p></div>
+      </div>
+    </div>
+    <div class="text-center space-y-1 pt-4 border-t border-slate-300/60">
+      <p class="text-sm font-bold text-slate-700">${esc(cover.school)}</p>
+      <p class="text-xs text-slate-500">พัฒนาโดย ครูจำนงค์ ขันตี สงวนลิขสิทธิ์ พ.ศ.2568</p>
+    </div>
+  </div>`;
+}
+
+function buildStudentPageHTML(st, idx, total, cover) {
+  const t = THEMES[cover.theme] || THEMES.sky;
+  const photos = st.photos || [], count = photos.length, nick = esc(st.nickname);
+  let collage;
+  if (count === 3) {
+    collage = `<div class="grid grid-cols-12 gap-4 h-[470px] items-center px-2">
+      <div class="col-span-7 polaroid rotate-[-2deg] h-[430px] flex flex-col"><div class="washi-tape"></div><img src="${photos[0]}" class="w-full h-[365px] object-cover rounded"><p class="text-center text-xs font-bold text-slate-600 mt-2">${nick} #1</p></div>
+      <div class="col-span-5 flex flex-col gap-4">
+        <div class="polaroid rotate-[2deg] h-[205px]"><img src="${photos[1]}" class="w-full h-[155px] object-cover rounded"></div>
+        <div class="polaroid rotate-[-1.5deg] h-[205px]"><img src="${photos[2]}" class="w-full h-[155px] object-cover rounded"></div>
+      </div></div>`;
+  } else if (count === 4) {
+    collage = `<div class="grid grid-cols-2 gap-4 h-[470px] px-4 items-center">${photos.slice(0, 4).map((p, i) => `
+      <div class="polaroid ${i % 2 ? 'rotate-[1.5deg]' : 'rotate-[-1.5deg]'} h-[220px]"><div class="washi-tape"></div><img src="${p}" class="w-full h-[170px] object-cover rounded"></div>`).join('')}</div>`;
+  } else {
+    collage = `<div class="grid grid-cols-12 gap-3.5 h-[470px] items-center px-2">
+      <div class="col-span-6 polaroid rotate-[-1.5deg] h-[435px]"><div class="washi-tape"></div><img src="${photos[0]}" class="w-full h-[370px] object-cover rounded"><p class="text-center text-xs font-bold text-slate-600 mt-2">${nick}</p></div>
+      <div class="col-span-6 grid grid-cols-2 gap-3">${photos.slice(1, 5).map((p, i) => `
+        <div class="polaroid ${i % 2 ? 'rotate-[-1.5deg]' : 'rotate-[1.5deg]'} h-[208px]"><img src="${p}" class="w-full h-[160px] object-cover rounded"></div>`).join('')}</div></div>`;
+  }
+
+  const badges = SOCIALS.filter(s => st.socials?.[s.key]).map(s =>
+    `<div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl shadow-sm border border-slate-200 text-xs font-medium text-slate-700"><i class="fa-brands ${s.icon} ${s.color} text-sm"></i> <span>${esc(st.socials[s.key])}</span></div>`);
+
+  return `
+  <div class="yearbook-page bg-gradient-to-br ${t.bgGrad} scrapbook-dots p-8 flex flex-col justify-between border-[12px] border-white">
+    <div class="bg-white/90 rounded-3xl p-5 shadow-sm border ${t.border} flex items-center justify-between">
+      <div class="space-y-1">
+        <div class="flex items-center gap-2">
+          <span class="px-3 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r ${t.headerGrad} text-white shadow-sm">NO. ${String(idx + 1).padStart(2, '0')}</span>
+          <span class="text-xs font-semibold text-slate-500">${esc(cover.school)}</span>
+        </div>
+        <h2 class="text-3xl font-extrabold text-slate-800">${esc(st.fullName)}</h2>
+      </div>
+      <div class="text-right"><div class="inline-block px-5 py-2 rounded-2xl border ${t.badgeBg} shadow-sm">
+        <span class="block text-[10px] uppercase tracking-wider font-semibold opacity-75">ชื่อเล่น</span>
+        <span class="text-2xl font-extrabold">“${nick}”</span></div></div>
+    </div>
+    <div class="my-1">${collage}</div>
+    <div class="bg-white/90 rounded-3xl p-5 shadow-sm border ${t.border} space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
+          <div class="w-11 h-11 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-xl"><i class="fa-solid fa-cake-candles"></i></div>
+          <div><p class="text-[11px] font-semibold text-slate-400">วัน/เดือน/ปีเกิด</p><p class="text-sm font-bold text-slate-700">${formatThaiDate(st.birthdate)}</p></div>
+        </div>
+        <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
+          <div class="w-11 h-11 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl"><i class="fa-solid fa-rocket"></i></div>
+          <div><p class="text-[11px] font-semibold text-slate-400">อาชีพที่ใฝ่ฝัน (My Dream Job)</p><p class="text-sm font-bold text-indigo-700">${esc(st.dreamJob)}</p></div>
+        </div>
+      </div>
+      <div class="bg-indigo-50/60 border border-indigo-100 rounded-2xl px-4 py-2.5 text-center"><p class="text-xs font-medium text-slate-700 italic">“${esc(st.quote || 'ยินดีที่ได้เป็นเพื่อนกันนะทุกคน')}”</p></div>
+      <div class="space-y-1.5">
+        <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-address-book text-indigo-500"></i> ช่องทางติดต่อ (Social Contacts)</p>
+        <div class="flex flex-wrap gap-2">${badges.length ? badges.join('') : '<span class="text-xs text-slate-400">- ไม่ได้ระบุช่องทางติดต่อ -</span>'}</div>
+      </div>
+    </div>
+    <div class="flex items-center justify-between text-[11px] text-slate-500 font-medium px-2">
+      <span>${esc(cover.title)} • ปีการศึกษา ${esc(cover.year)}</span><span>หน้า ${idx + 2} จาก ${total + 1}</span>
+    </div>
+  </div>`;
+}
+
+/* ---------- Render / navigation ---------- */
+function renderYearbook() {
+  const container = document.getElementById('yearbookCanvasContainer');
+  const total = appData.students.length;
+  const sel = document.getElementById('pageJumpSelect');
+  sel.innerHTML = `<option value="0">หน้าปก: ${esc(appData.cover.title)}</option>` +
+    appData.students.map((st, i) => `<option value="${i + 1}">หน้าที่ ${i + 2}: ${esc(st.fullName)} (${esc(st.nickname)})</option>`).join('');
+  sel.value = String(currentPageIndex);
+
+  const flip = currentViewMode === 'flip';
+  document.getElementById('flipNavigationControls').classList.toggle('hidden', !flip);
+  if (flip) {
+    const st = appData.students[currentPageIndex - 1];
+    container.innerHTML = currentPageIndex > 0 && st ? buildStudentPageHTML(st, currentPageIndex - 1, total, appData.cover) : buildCoverPageHTML(appData.cover, total);
+  } else {
+    container.innerHTML = buildCoverPageHTML(appData.cover, total) + appData.students.map((st, i) => buildStudentPageHTML(st, i, total, appData.cover)).join('');
+  }
+}
+
+function setViewMode(mode) {
+  currentViewMode = mode;
+  const on = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-indigo-600 shadow-sm flex items-center gap-1.5';
+  const off = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1.5';
+  document.getElementById('viewModeBtn-flip').className = mode === 'flip' ? on : off;
+  document.getElementById('viewModeBtn-scroll').className = mode === 'scroll' ? on : off;
+  if (currentUser) renderYearbook();
+}
+function prevPage() { if (currentPageIndex > 0) { currentPageIndex--; renderYearbook(); } }
+function nextPage() { if (currentPageIndex < appData.students.length) { currentPageIndex++; renderYearbook(); } }
+function jumpToPage(i) { currentPageIndex = parseInt(i, 10) || 0; currentViewMode !== 'flip' ? setViewMode('flip') : renderYearbook(); }
+
+function showLoading(title, sub) {
+  document.getElementById('loadingTitle').textContent = title;
+  document.getElementById('loadingSubtitle').textContent = sub;
+  const o = document.getElementById('loadingOverlay'); o.classList.remove('hidden'); o.classList.add('flex');
+}
+function hideLoading() { const o = document.getElementById('loadingOverlay'); o.classList.add('hidden'); o.classList.remove('flex'); }
+
+/* ---------- Exports ---------- */
+async function exportCurrentPagePNG() {
+  const page = document.querySelector('#yearbookCanvasContainer .yearbook-page'); if (!page) return;
+  showLoading('กำลังสร้างไฟล์รูปภาพ (PNG)...', 'ระบบกำลังแคปเจอร์หน้าหนังสือรุ่นความละเอียดสูง');
+  try {
+    await new Promise(r => setTimeout(r, 200));
+    const canvas = await html2canvas(page, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+    const a = document.createElement('a');
+    a.download = `หนังสือรุ่น_ป6_${currentPageIndex === 0 ? 'หน้าปก' : 'นักเรียนคนที่_' + currentPageIndex}.png`;
+    a.href = canvas.toDataURL('image/png'); a.click();
+  } catch (err) { console.error(err); alert('เกิดข้อผิดพลาดในการสร้างรูปภาพ'); }
+  finally { hideLoading(); }
+}
+
+async function exportFullPDF() {
+  showLoading('กำลังสร้างไฟล์ PDF ทั้งเล่ม...', 'กรุณารอสักครู่ ระบบกำลังรวมหน้าปกและหน้านักเรียนทุกคน');
+  const staging = document.getElementById('pdfExportStaging');
+  try {
+    const total = appData.students.length;
+    staging.innerHTML = `<div class="pdf-page-break">${buildCoverPageHTML(appData.cover, total)}</div>` +
+      appData.students.map((st, i) => `<div class="${i === total - 1 ? '' : 'pdf-page-break'}">${buildStudentPageHTML(st, i, total, appData.cover)}</div>`).join('');
+    await new Promise(r => setTimeout(r, 400));
+    await html2pdf().set({
+      margin: 0, filename: `หนังสือรุ่นออนไลน์_ป6_${appData.cover.year}.pdf`,
+      image: { type: 'jpeg', quality: 0.95 }, html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+      jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait' }
+    }).from(staging).save();
+  } catch (err) { console.error(err); alert('เกิดข้อผิดพลาดในการสร้างไฟล์ PDF'); }
+  finally { staging.innerHTML = ''; hideLoading(); }
+}
+
+function exportStandaloneWeb() {
+  showLoading('กำลังสร้างไฟล์เว็บไซต์ (.html)...', 'ฝังข้อมูลและรูปภาพทั้งหมดลงในไฟล์เดียวพร้อมแชร์');
+  setTimeout(() => {
+    const total = appData.students.length;
+    const pages = [buildCoverPageHTML(appData.cover, total), ...appData.students.map((st, i) => buildStudentPageHTML(st, i, total, appData.cover))];
+    const html = `<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${esc(appData.cover.title)} - ${esc(appData.cover.school)}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com/3.4.17"><\/script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body { font-family: 'Kanit', sans-serif; background: #0f172a; color: #f8fafc; }
+    .yearbook-page { width: 794px; height: 1123px; position: relative; overflow: hidden; background: #fff; color: #1e293b; margin: 0 auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+    .scrapbook-dots { background-image: radial-gradient(rgba(0,0,0,0.08) 1.5px, transparent 1.5px); background-size: 22px 22px; }
+    .polaroid { background: #fff; padding: 10px 10px 30px 10px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15); border: 1px solid #f1f5f9; position: relative; }
+    .washi-tape { position: absolute; top: -12px; left: 50%; transform: translateX(-50%) rotate(-3deg); width: 95px; height: 26px; background: rgba(255,255,255,0.65); border-left: 2px dashed rgba(0,0,0,0.08); border-right: 2px dashed rgba(0,0,0,0.08); z-index: 10; }
+    @media (max-width: 850px) { .scale-wrap { transform: scale(0.46); transform-origin: top center; margin-bottom: -580px; } }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-50 px-4 py-3">
+    <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 class="text-base font-bold text-white">${esc(appData.cover.title)} (ปีการศึกษา ${esc(appData.cover.year)})</h1>
+        <p class="text-xs text-sky-400">${esc(appData.cover.school)}</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="prev()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-indigo-600 text-xs font-semibold"><i class="fa-solid fa-chevron-left"></i> หน้าก่อนหน้า</button>
+        <span id="pageIndicator" class="text-xs font-bold px-3 py-1.5 bg-slate-800 rounded-lg">1 / ${pages.length}</span>
+        <button onclick="next()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-indigo-600 text-xs font-semibold">หน้าถัดไป <i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+    </div>
+  </header>
+  <main class="flex-1 py-8 px-2 overflow-x-hidden flex justify-center"><div id="viewer" class="scale-wrap"></div></main>
+  <footer class="text-center py-4 text-xs text-slate-400 border-t border-slate-800">พัฒนาโดย ครูจำนงค์ ขันตี สงวนลิขสิทธิ์ พ.ศ.2568 | ${esc(appData.cover.school)}</footer>
+  <script>
+    const pages = ${JSON.stringify(pages).replace(/</g, '\\u003c')};
+    let idx = 0;
+    function render() { document.getElementById('viewer').innerHTML = pages[idx]; document.getElementById('pageIndicator').textContent = (idx + 1) + ' / ' + pages.length; }
+    function prev() { if (idx > 0) { idx--; render(); window.scrollTo({top:0, behavior:'smooth'}); } }
+    function next() { if (idx < pages.length - 1) { idx++; render(); window.scrollTo({top:0, behavior:'smooth'}); } }
+    render();
+  <\/script>
+</body>
+</html>`;
+    const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
+    const a = document.createElement('a'); a.href = url; a.download = `เว็บหนังสือรุ่น_ป6_${appData.cover.year}.html`; a.click();
+    URL.revokeObjectURL(url); hideLoading();
+  }, 200);
+}
+
+/* ---------- Backup / Restore (ต่อบัญชี) ---------- */
+function backupJSON() {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json' }));
+  const a = document.createElement('a'); a.href = url; a.download = `ข้อมูลหนังสือรุ่น_ป6_${currentUser}_${appData.cover.year}.json`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function restoreJSON(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imp = JSON.parse(e.target.result);
+      if (imp.cover && Array.isArray(imp.students)) {
+        appData = imp; currentPageIndex = 0; restoreToCloud();
+        populateCoverInputs(); renderStudentList(); renderYearbook();
+        alert('กู้คืนข้อมูลหนังสือรุ่นสำเร็จเรียบร้อยครับ!');
+      } else alert('รูปแบบไฟล์ JSON ไม่ถูกต้อง');
+    } catch (err) { alert('ไม่สามารถอ่านไฟล์ JSON ได้'); }
+  };
+  reader.readAsText(file); event.target.value = '';
+}
+</script>
+</body>
+</html>
